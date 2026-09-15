@@ -3,6 +3,7 @@ resource "google_storage_bucket" "amilia_calendar_event_mappings" {
   name                        = "${var.project_id}-amilia-calendar-event-mappings"
   location                    = var.event_mapping_bucket_location
   uniform_bucket_level_access = true
+  public_access_prevention    = "enforced"
 
   lifecycle_rule {
     action {
