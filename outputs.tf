@@ -12,3 +12,8 @@ output "amilia_calendar_event_mappings_bucket" {
   description = "Name of the event-ID mapping bucket, for GOOGLE_EVENT_STORE_BUCKET in env.yaml."
   value       = google_storage_bucket.amilia_calendar_event_mappings.name
 }
+
+output "amilia_webhook_token_secret_id" {
+  description = "Secret Manager secret ID holding the Amilia webhook shared-secret token. Fetch the value with: gcloud secrets versions access latest --secret=<this>"
+  value       = google_secret_manager_secret.amilia_webhook_token.secret_id
+}
