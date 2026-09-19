@@ -36,3 +36,44 @@ resource "google_secret_manager_secret_iam_member" "amilia_calendar_updater_toke
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.amilia_calendar_updater.email}"
 }
+
+# A dedicated Amilia user account for REST API access (occurrence data the
+# webhooks don't carry — see amilia_client.py). No random_password and no
+# google_secret_manager_secret_version here: these hold real Amilia
+# credentials, which nothing in this Terraform config should ever generate
+# or see. Create the container only, then set the real values by hand:
+#   printf '%s' '<username>' | gcloud secrets versions add amilia-api-username --data-file=-
+#   printf '%s' '<password>' | gcloud secrets versions add amilia-api-password --data-file=-
+resource "google_secret_manager_secret" "amilia_api_username" {
+  project   = var.project_id
+  secret_id = "amilia-api-username"
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.secretmanager]
+}
+
+resource "google_secret_manager_secret" "amilia_api_password" {
+  project   = var.project_id
+  secret_id = "amilia-api-password"
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.secretmanager]
+}
+
+resource "google_secret_manager_secret_iam_member" "amilia_calendar_updater_api_username_accessor" {
+  secret_id = google_secret_manager_secret.amilia_api_username.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.amilia_calendar_updater.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "amilia_calendar_updater_api_password_accessor" {
+  secret_id = google_secret_manager_secret.amilia_api_password.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.amilia_calendar_updater.email}"
+}

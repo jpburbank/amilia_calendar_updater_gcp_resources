@@ -21,3 +21,21 @@ variable "event_mapping_retention_days" {
   type        = number
   default     = 90
 }
+
+variable "activity_mapping_retention_days" {
+  description = "Days after an Activity occurrence's end date before its mapping object is deleted."
+  type        = number
+  default     = 90
+}
+
+variable "function_region" {
+  description = "Region the Cloud Functions (webhook receiver and reconciler) are deployed in."
+  type        = string
+  default     = "us-west1"
+}
+
+variable "reconcile_queue_id" {
+  description = "Cloud Tasks queue name for Activity visibility reconciliation fan-out."
+  type        = string
+  default     = "amilia-activity-reconciliation"
+}
