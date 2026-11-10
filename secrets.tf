@@ -77,3 +77,30 @@ resource "google_secret_manager_secret_iam_member" "amilia_calendar_updater_api_
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.amilia_calendar_updater.email}"
 }
+
+# The Google Calendar the functions write to. Kept in Secret Manager rather
+# than env.yaml so switching calendars (the current one is dev-only; prod
+# will use a different calendar) is a new secret version plus a redeploy,
+# with no code or config-file change. Not really secret, but this keeps it
+# out of the public repo. Container only, like the Amilia API credentials:
+# set or swap the value by hand, then redeploy both functions:
+#   printf '%s' '<calendar-id>@group.calendar.google.com' | \
+#     gcloud secrets versions add google-calendar-id --data-file=-
+# The function's service account must also be shared on that calendar (see
+# the app repo's scripts/check_access.py).
+resource "google_secret_manager_secret" "google_calendar_id" {
+  project   = var.project_id
+  secret_id = "google-calendar-id"
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.secretmanager]
+}
+
+resource "google_secret_manager_secret_iam_member" "amilia_calendar_updater_calendar_id_accessor" {
+  secret_id = google_secret_manager_secret.google_calendar_id.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.amilia_calendar_updater.email}"
+}
