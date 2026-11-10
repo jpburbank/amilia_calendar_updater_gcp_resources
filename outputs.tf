@@ -32,3 +32,8 @@ output "reconcile_queue_id" {
   description = "Cloud Tasks queue ID, for RECONCILE_QUEUE_ID in env.yaml."
   value       = google_cloud_tasks_queue.activity_reconciliation.name
 }
+
+output "google_calendar_id_secret_id" {
+  description = "Secret Manager secret ID holding the target Google Calendar ID (GOOGLE_CALENDAR_ID). Set or swap the value with: gcloud secrets versions add <this> --data-file=-, then redeploy both functions."
+  value       = google_secret_manager_secret.google_calendar_id.secret_id
+}
