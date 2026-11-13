@@ -37,3 +37,13 @@ output "google_calendar_id_secret_id" {
   description = "Secret Manager secret ID holding the target Google Calendar ID (GOOGLE_CALENDAR_ID). Set or swap the value with: gcloud secrets versions add <this> --data-file=-, then redeploy both functions."
   value       = google_secret_manager_secret.google_calendar_id.secret_id
 }
+
+output "function_region" {
+  description = "Region the Cloud Functions and the Cloud Tasks queue live in: --region for deploys, and RECONCILE_QUEUE_LOCATION in the app's env.yaml."
+  value       = var.function_region
+}
+
+output "project_id" {
+  description = "GCP project ID: GCP_PROJECT_ID in the app's env.yaml."
+  value       = var.project_id
+}
