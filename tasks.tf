@@ -48,3 +48,57 @@ resource "google_cloud_run_service_iam_member" "amilia_calendar_updater_reconcil
   role     = "roles/run.invoker"
   member   = "serviceAccount:${google_service_account.amilia_calendar_updater.email}"
 }
+
+# Background processing for every Amilia webhook. The public webhook
+# function only checks the token and enqueues the raw webhook body here;
+# the private worker function (var.webhook_worker_function_name) runs the
+# handlers. This keeps the reply to Amilia at milliseconds (slow replies
+# were followed by redeliveries) and lets a failed Amilia/Calendar call
+# retry instead of being dropped.
+resource "google_cloud_tasks_queue" "webhook_processing" {
+  project  = var.project_id
+  name     = var.webhook_queue_id
+  location = var.function_region
+
+  # One task at a time: Cloud Tasks doesn't guarantee order, and two tasks
+  # for the same Activity running concurrently could overwrite each other's
+  # store writes. Volume is a few dozen webhooks a day, so serial
+  # processing costs nothing noticeable.
+  rate_limits {
+    max_dispatches_per_second = 5
+    max_concurrent_dispatches = 1
+  }
+
+  # Backoff 10s, 20s, ... capped at 10 min. Unlimited attempts, bounded by
+  # time. The app gives up on its own at 24h (WEBHOOK_TASK_GIVE_UP_AFTER_SECONDS),
+  # logging the full webhook; max_retry_duration is only a backstop.
+  retry_config {
+    max_attempts       = -1
+    min_backoff        = "10s"
+    max_backoff        = "600s"
+    max_doublings      = 6
+    max_retry_duration = var.webhook_task_max_retry_duration
+  }
+
+  depends_on = [google_project_service.cloudtasks]
+}
+
+resource "google_cloud_tasks_queue_iam_member" "amilia_calendar_updater_webhook_enqueuer" {
+  project  = var.project_id
+  location = google_cloud_tasks_queue.webhook_processing.location
+  name     = google_cloud_tasks_queue.webhook_processing.name
+  role     = "roles/cloudtasks.enqueuer"
+  member   = "serviceAccount:${google_service_account.amilia_calendar_updater.email}"
+}
+
+# Same caveat as the reconciler invoker binding above: the worker function
+# is deployed with `gcloud functions deploy`, so it must exist before this
+# resource can apply. First rollout: apply the queue and enqueuer binding
+# (-target), deploy the worker, then run a full `terraform apply`.
+resource "google_cloud_run_service_iam_member" "amilia_calendar_updater_webhook_worker_invoker" {
+  project  = var.project_id
+  location = var.function_region
+  service  = var.webhook_worker_function_name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.amilia_calendar_updater.email}"
+}

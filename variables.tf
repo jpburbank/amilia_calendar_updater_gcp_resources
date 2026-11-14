@@ -39,3 +39,21 @@ variable "reconcile_queue_id" {
   type        = string
   default     = "amilia-activity-reconciliation"
 }
+
+variable "webhook_queue_id" {
+  description = "Cloud Tasks queue name for processing Amilia webhooks in the background."
+  type        = string
+  default     = "amilia-webhook-processing"
+}
+
+variable "webhook_worker_function_name" {
+  description = "Name of the private Cloud Function that processes queued Amilia webhooks."
+  type        = string
+  default     = "amilia-webhook-worker"
+}
+
+variable "webhook_task_max_retry_duration" {
+  description = "Backstop limit on how long Cloud Tasks retries one webhook task. Must exceed the app's WEBHOOK_TASK_GIVE_UP_AFTER_SECONDS (24h), so the worker always gets to make its own final attempt, logging the full webhook before giving up."
+  type        = string
+  default     = "90000s" # 25h
+}
