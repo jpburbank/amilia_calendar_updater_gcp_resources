@@ -35,6 +35,17 @@ resource "google_cloud_tasks_queue_iam_member" "amilia_calendar_updater_enqueuer
   member   = "serviceAccount:${google_service_account.amilia_calendar_updater.email}"
 }
 
+# Both queues' tasks carry an OIDC token for this same service account, and
+# Cloud Tasks only creates such a task if the caller may act as that account
+# (iam.serviceAccounts.actAs). Granted on the account itself, not the project,
+# so it can impersonate nothing else. Without it every enqueue is refused with
+# PERMISSION_DENIED and the webhook falls back to processing inline.
+resource "google_service_account_iam_member" "amilia_calendar_updater_act_as_self" {
+  service_account_id = google_service_account.amilia_calendar_updater.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.amilia_calendar_updater.email}"
+}
+
 # The reconciler Cloud Function (amilia-activity-reconciler) is deployed
 # the same way as the main webhook function — via `gcloud functions
 # deploy`, not Terraform — so this binding references it by name rather
