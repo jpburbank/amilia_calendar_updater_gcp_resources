@@ -47,3 +47,13 @@ output "project_id" {
   description = "GCP project ID: GCP_PROJECT_ID in the app's env.yaml."
   value       = var.project_id
 }
+
+output "webhook_queue_id" {
+  description = "Cloud Tasks queue ID for background webhook processing, for WEBHOOK_QUEUE_ID in env.yaml."
+  value       = google_cloud_tasks_queue.webhook_processing.name
+}
+
+output "webhook_worker_function_name" {
+  description = "Name to deploy the private webhook worker Cloud Function under (gcloud functions deploy <this>)."
+  value       = var.webhook_worker_function_name
+}
